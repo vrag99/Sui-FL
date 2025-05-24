@@ -1,104 +1,108 @@
-/// Module: weighted_aggregator
 module contracts::aggregator;
 
 use sui::event;
+use std::string::String;
 
 // Event struct for logging
 public struct LogEvent has copy, drop, store {
     message: vector<u8>,
 }
 
-// Main aggregator struct
-public struct WeightedAggregator has key, store {
+public struct AggregatorStore has key, store {
     id: UID,
-    numbers: vector<NumberWeight>, // (number, weight) pairs
-    total_sum: u128,              // Using u128 for fixed-point arithmetic
-    total_weight: u128,           // Using u128 for fixed-point arithmetic
+    aggregators: vector<WeightedAggregator>,
 }
 
-// Struct to hold number and weight pair
-public struct NumberWeight has copy, drop, store {
-    number: u128, // Fixed-point representation (scaled by 10^9)
-    weight: u128, // Fixed-point representation (scaled by 10^9)
+public struct WeightedAggregator has store, drop {
+    id: String, 
+    parameters: vector<Parameter>,
+    fed_avg_weight: u128, // Scaled by 10^9
+    fed_avg_bias: u128, // Scaled by 10^9
 }
 
-// Constants
-const SCALE_FACTOR: u128 = 1_000_000_000; // 10^9 for fixed-point precision
+public struct Parameter has store, drop {
+    address: address,
+    weight: u128, // Scaled by 10^9
+    bias: u128, // Scaled by 10^9
+}
 
-// Initialize the aggregator
-public fun create_weights(ctx: &mut TxContext) {
-    let aggregator = WeightedAggregator {
+const SCALE_FACTOR: u128 = 1_000_000_000;
+
+fun init(ctx: &mut TxContext) {
+    let aggregator = AggregatorStore {
         id: object::new(ctx),
-        numbers: vector::empty(),
-        total_sum: 0,
-        total_weight: 1,
+        aggregators: vector::empty(),
     };
-    // move_to(account, aggregator);
-    // emit_log_event(b"Initialized WeightedAggregator");
-    transfer::public_transfer(aggregator, ctx.sender());
+    transfer::share_object(aggregator);
+    emit_log_event(b"Initialized Aggregator");
 }
 
-// Add a new number with its weight
-public fun add(number: u64, weight: u64, weighted_aggregator: &mut WeightedAggregator) {
-    let aggregator = weighted_aggregator;
-    
-    // Convert to fixed-point (assuming input number and weight are integers)
-    let scaled_number = (number as u128) * SCALE_FACTOR;
-    let scaled_weight = (weight as u128) * SCALE_FACTOR;
+fun find_aggregator_index(aggregator: &AggregatorStore, id: String): Option<u64> {
+    let len = vector::length(&aggregator.aggregators);
+    let mut i = 0;
+    while (i < len) {
+        let aggregator = vector::borrow(&aggregator.aggregators, i);
+        if (aggregator.id == id) {
+            return option::some(i)
+        };
+        i = i + 1;
+    };
+    option::none()
+}
 
-    // Log addition
-    emit_log_event(b"Adding number and weight");
-
-    // Store the number and weight
-    vector::push_back(&mut aggregator.numbers, NumberWeight {
-        number: scaled_number,
-        weight: scaled_weight,
+public fun create_aggregator(aggregator: &mut AggregatorStore, id: String) {
+    vector::push_back(&mut aggregator.aggregators, WeightedAggregator {
+        id,
+        parameters: vector::empty(),
+        fed_avg_weight: 0,
+        fed_avg_bias: 0,
     });
-
-    // Update running totals
-    aggregator.total_sum = aggregator.total_sum + (scaled_number * scaled_weight / SCALE_FACTOR);
-    aggregator.total_weight = aggregator.total_weight + scaled_weight;
 }
 
-// Get the current weighted average
-public fun get_weighted_average(weighted_aggregator: &WeightedAggregator): u64 {
-    let aggregator = weighted_aggregator;
-    
-    emit_log_event(b"Calculating weighted average");
-
-    if (aggregator.total_weight == 0) {
-        0 // Return 0 if no weights
-    } else {
-        // Return weighted average scaled back to integer
-        ((aggregator.total_sum / aggregator.total_weight) as u64)
-    }
+public fun add_parameters(aggregator: &mut AggregatorStore, id: String, address: address, weight: u128, bias: u128) {
+    let index_opt = find_aggregator_index(aggregator, id);
+    if (option::is_none(&index_opt)) {
+        abort 0
+    };
+    let index = *option::borrow(&index_opt);
+    let aggregator = vector::borrow_mut(&mut aggregator.aggregators, index);
+    vector::push_back(&mut aggregator.parameters, Parameter { address, weight, bias });
 }
 
-// Get all numbers and their weights
-public fun get_all(weighted_aggregator: &WeightedAggregator): vector<NumberWeight> {
-    let aggregator = weighted_aggregator;
-    
-    emit_log_event(b"Getting all numbers and weights");
-    
-    aggregator.numbers
+public fun aggregate_parameters(aggregator: &mut AggregatorStore, id: String) {
+    let index_opt = find_aggregator_index(aggregator, id);
+    if (option::is_none(&index_opt)) {
+        abort 0
+    };
+    let index = *option::borrow(&index_opt);
+    let aggregator = vector::borrow_mut(&mut aggregator.aggregators, index);
+
+    let len = vector::length(&aggregator.parameters);
+    if (len == 0) {
+        abort 0
+    };
+
+    let mut total_weight: u128 = 0;
+    let mut total_bias: u128 = 0;
+    let mut i = 0;
+
+    while (i < len) {
+        let param = vector::borrow(&aggregator.parameters, i);
+        total_weight = total_weight + param.weight;
+        total_bias = total_bias + param.bias;
+        i = i + 1;
+    };
+
+    aggregator.fed_avg_weight = total_weight / (len as u128);
+    aggregator.fed_avg_bias = total_bias / (len as u128);
 }
 
-// Get the total weight
-public fun get_total_weight(weighted_aggregator: &WeightedAggregator): u64 {
-    let aggregator = weighted_aggregator;
-    (aggregator.total_weight / SCALE_FACTOR as u64)
-}
-
-// Get the number of entries
-public fun len(weighted_aggregator: &WeightedAggregator): u64 {
-    let aggregator = weighted_aggregator;
-    vector::length(&aggregator.numbers)
-}
-
-// Check if the aggregator is empty
-public fun is_empty(weighted_aggregator: &WeightedAggregator): bool {
-    let aggregator = weighted_aggregator;
-    vector::is_empty(&aggregator.numbers)
+public fun delete_aggregator(aggregator: &mut AggregatorStore, id: String) {
+    let mut index_opt = find_aggregator_index(aggregator, id);
+    if (option::is_none(&index_opt)) {
+        abort 0
+    };
+    vector::remove(&mut aggregator.aggregators, option::extract(&mut index_opt));
 }
 
 // Helper function to emit log events
