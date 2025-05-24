@@ -1,6 +1,8 @@
 import React from "react";
-import { Button } from '../ui/button'
+import { Button } from "../ui/button";
 import { Card } from "../ui/card";
+import { ConnectModal } from "@mysten/dapp-kit";
+import Link from "next/link";
 
 const CTASection = () => {
   return (
@@ -12,10 +14,15 @@ const CTASection = () => {
           machine learning applications today.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button size="lg">Launch Platform</Button>
-          <Button size="lg" variant="outline">
-            Read Documentation
-          </Button>
+          <ConnectModal trigger={<Button size="lg">Launch Platform</Button>} />
+          <Link
+            href={"https://github.com/vrag99/Sui-FL/tree/main"}
+            target="_blank"
+          >
+            <Button size="lg" variant="outline">
+              Read Documentation
+            </Button>
+          </Link>
         </div>
       </Card>
     </section>
