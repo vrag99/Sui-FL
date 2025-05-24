@@ -250,9 +250,13 @@ const StartTrainingButton = ({
             !dataSet ||
             (dataSet && isValid && (updatedWeight === 0 || updatedBias === 0))
           }
-          onClick={!isValid ? verifyDataset : () => {
-            addParameters(model.id, updatedWeight * SCALE_FACTOR, updatedBias * SCALE_FACTOR);
+          onClick={!isValid ? verifyDataset : async () => {
+            await addParameters(model.id, updatedWeight * SCALE_FACTOR, updatedBias * SCALE_FACTOR);
             toast.success("Parameters added");
+            setUpdatedWeight(0);
+            setUpdatedBias(0);
+            setDataSet(null);
+            setIsValid(false);
           }}
         >
           {isValid ? "Stake & Upload Parameters" : "Verify Dataset"}
@@ -262,16 +266,6 @@ const StartTrainingButton = ({
   );
 };
 
-const TrainingIndicator = () => {
-  return (
-    <div
-      className={`flex items-center gap-2 transition-all duration-300 ease-out`}
-    >
-      <div className="w-3 h-3 bg-primary animate-pulse rounded-full"></div>
-      <p className="text-xs text-muted-foreground font-medium">Training</p>
-    </div>
-  );
-};
 
 const CompletedIndicator = () => {
   return (
