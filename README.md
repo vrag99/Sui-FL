@@ -8,7 +8,7 @@
 
 <div align="center">
 
-Sui-FL is a platform designed to enable secure and privacy-preserving model training across distributed datasets, where data providers can share encrypted datasets for AI model training. Sui Smart contacts serve as a backbone for aggregation and AI operations, while Walrus is the storage solution for distributed weights.
+Sui-FL is a platform designed to enable secure and privacy-preserving model training across distributed datasets, where data providers can share encrypted datasets for AI model training. Sui Smart contacts serve as a backbone for aggregation and AI operations, while Walrus is the storage solution for model data.
 
 </div>
 
@@ -18,55 +18,58 @@ Sui-FL is a platform designed to enable secure and privacy-preserving model trai
 
 </div>
 
-## System Overview
+# System Overview
 
 <div align="center">
 
-![Architecture](./images/architecture.jpeg)
+![Architecture](./images/architecture.png)
 
 </div>
 
-The platform consists of three main layers: user interaction, distributed backend processing, and dual storage infrastructure. Users interact with a distributed backend network that coordinates AI model operations across blockchain and decentralized storage systems.
+## Components
 
-## Core Components
+### 1. Users
+- **Publisher**: Initiates a federated learning job by uploading a model (in .onnx format) and specifying a reward for contributors.
+- **Trainer**: Participates in training by contributing compute and data locally, receiving rewards for valid updates.
 
-### Users
-The system supports multiple user types with different capabilities:
-- **User A**: Handles model validation and fleet management, ensuring locked models don't interfere with fine-tuned computations
-- **User B**: Focuses on blockchain integration, computing AI models directly to the SUI blockchain
-- **User C**: Manages training epochs and model improvements, sending optimization data to enhance SUI models
+### 2. Walrus Blockchain
+* Decentralized storage layer.
+* Stores the actual model files, training data, encrypted weight updates, and any associated blobs.
 
-### Backend Network
-The distributed backend serves as the central coordination layer, managing connections between users and storage systems. It sources key elements through validation calls from different user connections and orchestrates model operations across the infrastructure.
+### 3. Sui Blockchain
+- Coordination and state management layer.
+- Tracks model metadata (e.g., blob IDs, training status).
+- Handles staking, reward distribution, trainer slashing, and federated aggregation logic via smart contracts.
 
-### Storage Infrastructure
+### 4. Aggregator (on Sui)
+- Federated averaging module.
+- Triggered when enough updates are submitted.
+- Computes the global model weights from encrypted updates using privacy-preserving aggregation on the Sui chain.
 
-#### SUI Blockchain
-SUI blockchain handles the on-chain aspects of the system, including model results storage, cross-chain token transfers for payments, and ensuring transparent transactions. All computational results are recorded on-chain for verifiability.
 
-#### Walrus Storage
-Walrus provides decentralized storage for model data and training materials. The system uses multiple Walrus instances to separate different types of data and ensure redundancy.
+## Flow
+### 1.	Model Publishing
+The publisher uploads a machine learning model in ONNX format along with a reward incentive. The model file is stored on Walrus, while the associated metadata (blob ID, model state) is stored on the Sui chain.
+### 2.	Trainer Participation
+Trainers register by uploading input data that meets a predefined format. They locally train the model and compute updated weights and biases. Before submitting, the weights are encrypted using Pedersen commitments to preserve privacy. Trainers must stake tokens defined by the publisher to discourage malicious behavior.
+### 3.	Update Submission
+Encrypted model updates are uploaded to Walrus, and corresponding metadata (stake, trainer address, proof of work) is recorded on the Sui chain.
+### 4.	Aggregation Trigger
+When a sufficient number of trainer updates are recorded, the publisher can initiate a federated averaging round. The Aggregator module on Sui collects the encrypted updates and computes the new global model parameters.
+### 5.	Model Finalization
+The final aggregated model is committed to Walrus, and its reference is stored on Sui. Trainers who submitted valid updates are rewarded automatically through smart contract execution.
 
-### Model Operations
 
-#### Model Publishing
-The publishing pipeline takes trained models and makes them available through the Walrus storage network. Published models are linked to their blockchain records for full traceability.
+## Privacy and Security
+- Pedersen Commitments are used to encrypt weight updates, ensuring that training data and local gradients remain private.
+- Staking and Slashing ensure that malicious trainers can be economically penalized.
+- Decentralized Storage ensures high availability and tamper resistance for models and updates.
 
-#### Model Training
-The training system processes user-submitted epochs and training data, utilizing Walrus storage for data persistence and computational resources.
+## Why Sui??
+We chose Sui for its powerful and intuitive approach to blockchain architecture. At its core, Sui handles all our components - from models to rewards - as distinct objects on the chain, giving us precise control over their states and history. 
 
-## Data Flow
+This design allows multiple trainers to work simultaneously without slowing down the network. 
 
-1. **User Interaction**: Users submit validation requests, training epochs, or model computation tasks to the backend network
-2. **Backend Processing**: The distributed backend coordinates requests and routes them to appropriate storage systems
-3. **Storage Operations**: Model data is stored in Walrus while results and transactions are recorded on SUI blockchain
-4. **Result Distribution**: Computed results and payments flow back to users through the SUI blockchain
+Security is a top priority: Sui's built-in ownership system makes sure only authorized trainers and publishers can access and modify their respective assets. The platform runs on Move, a programming language specifically designed for blockchain, which helps us build reliable smart contracts for coordinating the training process and managing rewards. 
 
-## Key Features
-
-- **Decentralized Architecture**: No single point of failure with distributed backend and storage
-- **Blockchain Integration**: Transparent operations and payments through SUI blockchain
-- **Scalable Storage**: Walrus decentralized storage handles large model files and training data
-- **Multi-User Support**: Different user types with specialized capabilities and access patterns
-- **Model Lifecycle Management**: Complete pipeline from training through publishing and validation
-
+To keep things cost-effective, we only store essential metadata on Sui while keeping the larger files on Walrus. Perhaps most importantly, all the critical operations - from verifying trainers to triggering model updates - happen automatically and transparently on the blockchain, eliminating the need for trust between participants.
