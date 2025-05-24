@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+  import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { DM_Sans, Libre_Baskerville, Lora } from "next/font/google";
@@ -10,7 +10,7 @@ const libreBaskerville = Libre_Baskerville({
   variable: "--font-libre-baskerville",
 });
 
-  const dmSans = DM_Sans({
+const dmSans = DM_Sans({
   subsets: ["latin"],
   variable: "--font-dm-sans",
 });

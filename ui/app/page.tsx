@@ -14,7 +14,7 @@ export default function Home() {
           className="absolute inset-0 size-[1000px] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 -z-10 [mask-image:radial-gradient(450px_circle_at_center,white,transparent)]"
           maxOpacity={0.3}
         />
-        <h1 className="text-8xl font-light font-display text-transparent bg-clip-text bg-gradient-to-r from-primary to-highlight">
+        <h1 className="text-8xl font-thin font-display text-transparent bg-clip-text bg-gradient-to-r from-primary to-highlight">
           SuiFL
         </h1>
         <p className="text-2xl text-muted-foreground">
