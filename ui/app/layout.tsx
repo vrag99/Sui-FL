@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-  import localFont from "next/font/local";
 import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
+import "@suiet/wallet-kit/style.css";
 import { DM_Sans, Libre_Baskerville, Lora } from "next/font/google";
+import Providers from "./providers";
 
 const libreBaskerville = Libre_Baskerville({
   subsets: ["latin"],
@@ -30,15 +30,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-return (
+  return (
     <html lang="en">
-      <body className={`${libreBaskerville.variable} ${dmSans.variable} ${lora.variable} antialiased dark font-sans`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-        >
-          {children}
-        </ThemeProvider>
+      <body
+        className={`${libreBaskerville.variable} ${dmSans.variable} ${lora.variable} antialiased dark font-sans`}
+      >
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
