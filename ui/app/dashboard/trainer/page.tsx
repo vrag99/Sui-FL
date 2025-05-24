@@ -9,7 +9,7 @@ const Trainer = () => {
         Have some spare computing power?
       </h1>
       <p className="text-lg text-muted-foreground">
-        Train models and earn APT while you're at it. 🚀
+        Train models and earn SUI while you're at it. 🚀
       </p>
       <div>
         <Tabs defaultValue="Available" className="mt-4 w-full">

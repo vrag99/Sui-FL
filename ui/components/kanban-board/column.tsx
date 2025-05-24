@@ -6,13 +6,15 @@ import { PublisherModel } from "@/lib/types";
 import { getIndicators, getNearestIndicator } from "@/lib/dragUtils";
 import NewModelTrigger from "@/components/new-model-trigger";
 import { Button } from "../ui/button";
+import { useSuiModelStore } from "@/lib/hooks/use-sui-model-store";
+import { useSuiAggregator } from "@/lib/hooks/use-sui-aggregator";
 
 interface ColumnProps {
   title: string;
   headingColor: string;
   models: PublisherModel[];
   column: "draft" | "published" | "trained";
-  setModels: React.Dispatch<React.SetStateAction<PublisherModel[]>>;
+  setModels: (models: PublisherModel[]) => void;
 }
 
 const Column: React.FC<ColumnProps> = ({
@@ -23,7 +25,8 @@ const Column: React.FC<ColumnProps> = ({
   setModels,
 }) => {
   const [active, setActive] = useState(false);
-
+  const { publishModel, publishing } = useSuiModelStore();
+  const { createAggregator } = useSuiAggregator();
   const handleDragStart = (
     e: React.DragEvent<HTMLDivElement>,
     model: PublisherModel
@@ -36,7 +39,7 @@ const Column: React.FC<ColumnProps> = ({
     }
   };
 
-  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragEnd = async(e: React.DragEvent<HTMLDivElement>) => {
     const modelId = e.dataTransfer.getData("modelId");
     setActive(false);
     clearHighlights();
@@ -52,6 +55,9 @@ const Column: React.FC<ColumnProps> = ({
       let copy = [...models];
       const modelToTransfer = copy.find((m) => m.id === modelId);
       if (!modelToTransfer) return;
+
+      await publishModel(modelId);
+      await createAggregator(modelId);
 
       // Update model status to "waitingForClients" when moved to published
       modelToTransfer.status = "waitingForClients";
@@ -103,7 +109,7 @@ const Column: React.FC<ColumnProps> = ({
   const filteredModels = models.filter((m) => {
     if (column === "draft") return m.status === "draft";
     if (column === "published")
-      return m.status === "waitingForClients" || m.status === "training";
+      return m.status === "waitingForClients";
     if (column === "trained") return m.status === "trained";
     return false;
   });
@@ -129,6 +135,7 @@ const Column: React.FC<ColumnProps> = ({
             key={m.id}
             {...m}
             column={column}
+            className={publishing ? "opacity-50 animate-pulse" : ""}
             handleDragStart={handleDragStart}
           />
         ))}

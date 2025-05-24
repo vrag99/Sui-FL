@@ -4,8 +4,11 @@ import { Label } from "@/components/ui/label";
 import { useStepper } from "@/components/ui/stepper";
 import { Textarea } from "@/components/ui/textarea";
 import { useNewModelStore } from "@/lib/stores/new-model-store";
-import { ChevronsLeft, ChevronsRight } from "lucide-react";
+import { useCurrentAccount } from "@mysten/dapp-kit";
+import { ChevronsLeft, ChevronsRight, Loader2 } from "lucide-react";
 import React from "react";
+import { generateRandomID } from "@/lib/utils";
+import { useSuiModelStore } from "@/lib/hooks/use-sui-model-store";
 
 interface ModelDetailProps {
   hasCompletedAllSteps: boolean;
@@ -20,18 +23,32 @@ const ModelDetails = (props: ModelDetailProps) => {
     description,
     epochs,
     stakeAmount,
+    onnxModelBlobId,
     setTitle,
     setDescription,
     setEpochs,
     setStakeAmount,
   } = useNewModelStore();
+  const { createModel, loading } = useSuiModelStore();
+  const currentAccount = useCurrentAccount();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setHasCompletedAllSteps(true);
+    const result = await createModel({
+      id: generateRandomID(),
+      title,
+      description,
+      creatorAddress: currentAccount?.address || "",
+      epochs,
+      stakeAmount,
+      status: "draft",
+      createdAt: new Date(),
+      onnxModelBlobId: onnxModelBlobId || "",
+    });
+    if (result) {
+      setHasCompletedAllSteps(true);
+    }
     nextStep();
-
-    // TODO: API call to create model
   };
 
   return (
@@ -100,11 +117,15 @@ const ModelDetails = (props: ModelDetailProps) => {
           >
             <ChevronsLeft className="mr-1" size={16} /> Back
           </Button>
-          <Button
-            className="w-24 h-10"
-            type="submit"
-          >
-            Next <ChevronsRight className="ml-1" size={16} />
+          <Button className="w-24 h-10" type="submit" disabled={loading}>
+            <>
+              Next{" "}
+              {loading ? (
+                <Loader2 className="ml-1 animate-spin" size={16} />
+              ) : (
+                <ChevronsRight className="ml-1" size={16} />
+              )}
+            </>
           </Button>
         </div>
       </div>

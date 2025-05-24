@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Step, Stepper, type StepItem } from "@/components/ui/stepper";
 import {
   Dialog,
@@ -13,6 +13,7 @@ import UploadCode from "./steps/upload-code";
 import ModelDetails from "./steps/model-detail";
 import { BadgeCheck } from "lucide-react";
 import { useNewModelStore } from "@/lib/stores/new-model-store";
+import { revalidatePath } from "next/cache";
 
 const NewModelTrigger = ({ children }: { children: React.ReactNode }) => {
   const steps = [
@@ -20,9 +21,22 @@ const NewModelTrigger = ({ children }: { children: React.ReactNode }) => {
     { label: "Model Details" },
   ] satisfies StepItem[];
 
-  const { setCode, setTitle, setDescription, setEpochs, setStakeAmount } =
-    useNewModelStore();
+  const {
+    setCode,
+    setTitle,
+    setDescription,
+    setEpochs,
+    setStakeAmount,
+    setOnnxModel,
+    setOnnxModelBlobId,
+  } = useNewModelStore();
   const [hasCompletedAllSteps, setHasCompletedAllSteps] = useState(false);
+
+  // useEffect(() => {
+  //   if (hasCompletedAllSteps) {
+  //     revalidatePath("/");
+  //   }
+  // }, [hasCompletedAllSteps]);
 
   return (
     <Dialog
@@ -34,6 +48,8 @@ const NewModelTrigger = ({ children }: { children: React.ReactNode }) => {
           setDescription("");
           setEpochs(0);
           setStakeAmount(0);
+          setOnnxModel(null);
+          setOnnxModelBlobId(null);
         }
       }}
     >
